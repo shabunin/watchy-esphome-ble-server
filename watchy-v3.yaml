@@ -1,0 +1,243 @@
+substitutions:
+  <<: !include pins-v3.yaml
+
+# to be able to parse json in lambdas
+json:
+
+globals:
+  - id: global_ble_rx_buf
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: global_notifications
+    type: std::map<int, std::string>
+    restore_value: no
+  - id: global_alarms
+    type: std::vector<uint32_t>
+    restore_value: no 
+  - id: global_alarms_menu_root # store it as a global to be able to manipulate from lambda
+    type: display_menu_base::MenuItemMenu*
+    initial_value: 'nullptr'
+  - id: global_notifications_menu_root # store it as a global to be able to manipulate from lambda
+    type: display_menu_base::MenuItemMenu*
+    initial_value: 'nullptr'
+  - id: global_mode
+    type: int
+    initial_value: '0' 
+  - id: global_page
+    type: int
+    initial_value: '0' 
+  - id: global_music_artist
+    type: std::string
+    restore_value: no
+    initial_value: '"---"' 
+  - id: global_music_track
+    type: std::string
+    restore_value: no
+    initial_value: '"---"'
+  - id: global_music_state
+    type: std::string
+    restore_value: no
+    initial_value: '"---"' 
+  - id: global_audio_volume
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+script:
+  - id: script_ble_send_json
+    parameters: 
+      msg: string
+    then:
+      lambda: |-
+          const size_t max_len = 20;
+          std::string full = "\n" + msg + "\n";
+          for (size_t i = 0; i < full.length(); i += max_len) {
+            std::vector<uint8_t> chunk(full.begin() + i,
+                                        full.begin() + i + std::min(max_len, full.length() - i));
+            id(tx_char).set_value(chunk);
+            id(tx_char).notify();
+            delay(30);
+          }
+
+esphome:
+  name: watchy_minimal
+  project:
+    name: bobalus.watchy-ble
+    version: "1.0"
+  includes:
+    - defs.h
+  on_boot:
+    then:
+      - delay: 1ms
+      # - pcf8563.read_time: # Only for Watchy v2
+      - component.update: battery
+      - component.update: epaper
+      - lambda: |-
+          // TODO: write me here
+
+esp32:  
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+  # https://raw.githubusercontent.com/espressif/arduino-esp32/master/tools/partitions/default_8MB.csv
+  partitions: default_8MB.csv
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+spi:
+  clk_pin: ${SPI_SCK_PIN}
+  mosi_pin: ${SPI_MOSI_PIN}
+  miso_pin: ${SPI_MISO_PIN}
+
+i2c:
+  sda: ${I2C_SDA_PIN}
+  scl: ${I2C_SCL_PIN}
+  scan: false
+
+debug:
+  update_interval: 5s
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  # https://esphome.io/components/sensor/index.html
+  - platform: debug
+    free:
+      name: "Heap Free"
+  # https://esphome.io/components/sensor/adc.html
+  - platform: adc
+    id: battery
+    attenuation: auto
+    pin: $BATTERY_ADC_PIN
+    update_interval: never
+    filters:
+      - multiply: $BATTERY_VOLTAGE_DIVIDER
+
+logger:
+  level: debug
+
+font:
+  - id: ubuntumono18
+    file: "gfonts://Ubuntu+Mono"
+    size: 18
+  - id: ubuntumono20
+    file: "gfonts://Ubuntu+Mono"
+    size: 20
+  - id: ubuntumono22
+    file: "gfonts://Ubuntu+Mono"
+    size: 22
+  - id: ubuntumono28
+    file: "gfonts://Ubuntu+Mono"
+    size: 28
+
+graphical_display_menu:
+  - id: alarms_menu
+    font: ubuntumono22
+    active: true
+    on_redraw:
+      then:
+        component.update: epaper
+    items:
+      - type: Label
+        text: ---
+  - id: notifications_menu
+    font: ubuntumono22
+    active: true
+    on_redraw:
+      then:
+        component.update: epaper
+    items:
+      - type: Label
+        text: ---
+
+display:
+  # Configuration for the display
+  # https://esphome.io/components/display/
+  # https://esphome.io/components/display/waveshare_epaper.html
+  # https://www.good-display.com/product/206.html
+  # https://www.e-paper-display.com/products_detail/productId=455.html
+  - id: epaper
+    platform: waveshare_epaper
+    model: 1.54inv2
+    cs_pin: $DISPLAY_CS_PIN
+    dc_pin: $DISPLAY_DC_PIN
+    reset_pin: $DISPLAY_RES_PIN
+    busy_pin: $DISPLAY_BUSY_PIN
+    update_interval: never
+    # Problem: full_update_every does not work as expected because esphome code will do a full update on every boot up.
+    # Solution: Edited `waveshare_epaper.h` and initialise to 1 instead of 0: `uint32_t at_update_{1};`
+    # See: `external_components` near the bottom.
+    full_update_every: 1000
+    # Duration for the display reset operation. Defaults to 200ms. Setting this value to 2ms may resolve issues with newer e-Paper Driver modules (e.g. Rev 2.1).
+    reset_duration: 2ms # ?????
+    lambda: |-
+      auto w = it.get_width();
+      auto h = it.get_height();
+      const auto BLACK = Color::WHITE;
+      const auto WHITE = Color::BLACK;
+
+      it.filled_rectangle(0, 0, w, h, WHITE); // clear entire background
+            
+      it.printf(w/2, h/2,
+              id(ubuntumono22),
+              TextAlign::TOP_CENTER,
+              "bat: %.02fV", id(battery).state);
+
+esp32_ble_server:
+  services:
+    - uuid: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"  # Nordic UART
+      characteristics:
+        - uuid: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  # TX (notify)
+          read: true
+          notify: true
+          id: tx_char
+        - uuid: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  # RX (write)
+          write: true
+          on_write:
+            then:
+              - lambda: |-
+                  std::string frag(x.begin(), x.end());
+                  ESP_LOGI("BLE", "RX Fragment: %s", frag.c_str());
+
+                  // Append fragment to buffer
+                  id(global_ble_rx_buf) += frag;
+
+                  // Process complete messages (starting with \x10GB( and ending with )\n)
+                  size_t start = id(global_ble_rx_buf).find("\x10GB(");
+                  size_t end = id(global_ble_rx_buf).find(")\n", start);
+
+                  while (start != std::string::npos && end != std::string::npos) {
+                    std::string json_part = id(global_ble_rx_buf).substr(start + 4, end - start - 4);
+                    ESP_LOGI("BLE", "RX Full Message: %s", json_part.c_str());
+
+                    StaticJsonDocument<4096> doc;
+                    DeserializationError err = deserializeJson(doc, json_part.c_str());
+                    if (err) {
+                      ESP_LOGW("BLE", "Invalid JSON");
+                    }
+
+                    // TODO: process json here
+
+
+                    
+                    // Remove parsed message from buffer
+                    id(global_ble_rx_buf).erase(0, end + 2);
+
+                    // Search for another message
+                    start = id(global_ble_rx_buf).find("\x10GB(");
+                    end = id(global_ble_rx_buf).find(")\n", start);
+                  }
+
+                  
+                  
+                  // Optional: prevent buffer overflow
+                  if (id(global_ble_rx_buf).length() > 2048) {
+                    ESP_LOGW("BLE", "BLE buffer overflow, clearing");
+                    id(global_ble_rx_buf).clear();
+                  }
