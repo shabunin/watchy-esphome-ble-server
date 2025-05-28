@@ -119,6 +119,148 @@ sensor:
     filters:
       - multiply: $BATTERY_VOLTAGE_DIVIDER
 
+switch:
+  # https://esphome.io/components/switch/index.html
+  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/template.html
+
+  - platform: gpio
+    id: buzzer
+    pin: $VIB_MOTOR_PIN
+
+binary_sensor:
+  # https://esphome.io/components/binary_sensor
+  # https://esphome.io/components/binary_sensor/gpio
+
+  ## Upper Left ##
+  - id: power_on_button
+    pin:
+      number: $BUTTON_LEFT_TOP_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    on_click:
+      min_length: 0ms
+      max_length: 2s
+      then:
+        - lambda: |-
+            id(buzzer).turn_on();
+            
+  - id: power_saving_mode_button
+    pin:
+      number: $BUTTON_LEFT_TOP_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 3s
+    on_press:
+      - lambda: |-
+          id(buzzer).turn_off();
+          
+  ## Lower Left ##
+  - id: timer_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    on_click:
+      min_length: 0ms
+      max_length: 2s
+      then:
+        - lambda: |-
+            id(buzzer).turn_on();
+
+  - id: cancel_active_timer_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 3s
+    on_press:
+      - lambda: |-
+          id(buzzer).turn_off();
+
+  - id: clear_all_timers_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 4s
+    on_press:
+      - lambda: |-
+          id(buzzer).turn_on();
+
+  ## Upper Right ##
+
+  - id: face_cycle_button
+    pin:
+      number: $BUTTON_RIGHT_TOP_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    on_click:
+      min_length: 0ms
+      max_length: 2s
+      then:
+        - lambda: |-
+            id(buzzer).turn_on();
+
+  - id: calendar_agenda_mode_button
+    pin:
+      number: $BUTTON_RIGHT_TOP_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 3s
+    on_press:
+      - lambda: |-
+          id(buzzer).turn_off();
+
+  ## Lower Right ##
+
+  - id: menu_mode_button
+    pin:
+      number: $BUTTON_RIGHT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    on_click:
+      min_length: 0ms
+      max_length: 2s
+      then:
+        - lambda: |-
+            id(buzzer).turn_on();
+
+  - id: full_epaper_refresh_button
+    pin:
+      number: $BUTTON_RIGHT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 3s
+    on_press:
+      - lambda: |-
+          id(buzzer).turn_off();
+          
+  ## Charging ##
+  - id: is_charging
+    pin:
+      # number: $CHRG_STATUS_PIN # Does not seem to work
+      number: $USB_DET_PIN
+      # inverted: true
+    platform: gpio
+    ## This pin seems to be unstable and can flip randomly, causing too many epaper updates:
+    # on_state:
+    #   component.update: epaper
+
 logger:
   level: debug
 
@@ -223,7 +365,6 @@ esp32_ble_server:
                     }
 
                     // TODO: process json here
-
 
                     
                     // Remove parsed message from buffer
