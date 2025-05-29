@@ -1,0 +1,95 @@
+globals:
+  - id: global_notifications
+    type: std::map<int, std::string>
+    restore_value: no
+  - id: global_notifications_menu_root # store it as a global to be able to manipulate from lambda
+    type: display_menu_base::MenuItemMenu*
+    initial_value: 'nullptr'
+
+graphical_display_menu:
+  - id: notifications_menu
+    font: ubuntumono22
+    active: true
+    on_redraw:
+      then:
+        component.update: epaper
+    items:
+      - type: Label
+        text: ---
+
+script:
+  # -------------- DRAW PAGE -----------------------
+ 
+  - id: script_notifications_page_update
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+
+    # ------------ LEFT BUTTONS --------------------
+  - id: script_notifications_page_btn_left_top_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+
+  - id: script_notifications_page_btn_left_top_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+          
+  - id: script_notifications_page_btn_left_bottom_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+
+  - id: script_notifications_page_btn_left_bottom_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+
+    # ------------ RIGHT BUTTONS --------------------
+  - id: script_notifications_page_btn_right_top_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+
+  - id: script_notifications_page_btn_right_top_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+          
+  - id: script_notifications_page_btn_right_bottom_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;
+
+  - id: script_notifications_page_btn_right_bottom_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_NOTIFICATIONS)
+            return;
+
+          return;

@@ -1,0 +1,96 @@
+globals:
+  - id: global_alarms
+    type: std::vector<uint32_t>
+    restore_value: no 
+  - id: global_alarms_menu_root # store it as a global to be able to manipulate from lambda
+    type: display_menu_base::MenuItemMenu*
+    initial_value: 'nullptr'
+
+graphical_display_menu:
+  - id: alarms_menu
+    font: ubuntumono22
+    active: true
+    on_redraw:
+      then:
+        component.update: epaper
+    items:
+      - type: Label
+        text: ---
+
+script:
+
+  # -------------- DRAW PAGE -----------------------
+  
+  - id: script_alarms_page_update
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+
+    # ------------ LEFT BUTTONS --------------------
+  - id: script_alarms_page_btn_left_top_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+
+  - id: script_alarms_page_btn_left_top_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+          
+  - id: script_alarms_page_btn_left_bottom_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+
+  - id: script_alarms_page_btn_left_bottom_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+
+    # ------------ RIGHT BUTTONS --------------------
+  - id: script_alarms_page_btn_right_top_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+
+  - id: script_alarms_page_btn_right_top_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+          
+  - id: script_alarms_page_btn_right_bottom_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;
+
+  - id: script_alarms_page_btn_right_bottom_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_ALARMS)
+            return;
+
+          return;

@@ -1,0 +1,95 @@
+globals:
+  - id: global_music_artist
+    type: std::string
+    restore_value: no
+    initial_value: '"---"' 
+  - id: global_music_track
+    type: std::string
+    restore_value: no
+    initial_value: '"---"'
+  - id: global_music_state
+    type: std::string
+    restore_value: no
+    initial_value: '"---"' 
+  - id: global_audio_volume
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+script:
+
+  # -------------- DRAW PAGE -----------------------
+  
+  - id: script_music_page_update
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+
+    # ------------ LEFT BUTTONS --------------------
+  - id: script_music_page_btn_left_top_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+
+  - id: script_music_page_btn_left_top_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+          
+  - id: script_music_page_btn_left_bottom_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+
+  - id: script_music_page_btn_left_bottom_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+
+    # ------------ RIGHT BUTTONS --------------------
+  - id: script_music_page_btn_right_top_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+
+  - id: script_music_page_btn_right_top_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+          
+  - id: script_music_page_btn_right_bottom_short
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;
+
+  - id: script_music_page_btn_right_bottom_long
+    then:
+      - lambda: |-
+          if (id(global_page) != PAGE_MUSIC)
+            return;
+
+          return;

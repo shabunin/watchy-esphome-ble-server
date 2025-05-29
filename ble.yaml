@@ -1,0 +1,126 @@
+globals:
+  - id: global_ble_rx_buf
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+
+esp32_ble_server:
+  services:
+    - uuid: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"  # Nordic UART
+      characteristics:
+        - uuid: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  # TX (notify)
+          read: true
+          notify: true
+          id: tx_char
+        - uuid: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  # RX (write)
+          write: true
+          on_write:
+            then:
+              - lambda: |-
+                  std::string frag(x.begin(), x.end());
+                  ESP_LOGI("BLE", "RX Fragment: %s", frag.c_str());
+
+                  // Append fragment to buffer
+                  id(global_ble_rx_buf) += frag;
+
+                  // Process complete messages (starting with \x10GB( and ending with )\n)
+                  size_t start = id(global_ble_rx_buf).find("\x10GB(");
+                  size_t end = id(global_ble_rx_buf).find(")\n", start);
+
+                  while (start != std::string::npos && end != std::string::npos) {
+                    std::string json_part = id(global_ble_rx_buf).substr(start + 4, end - start - 4);
+                    ESP_LOGI("BLE", "RX Full Message: %s", json_part.c_str());
+
+                    StaticJsonDocument<4096> doc;
+                    DeserializationError err = deserializeJson(doc, json_part.c_str());
+                    if (err) {
+                      ESP_LOGW("BLE", "Invalid JSON");
+                    }
+
+                    // TODO: process json here
+
+                    
+                    // Remove parsed message from buffer
+                    id(global_ble_rx_buf).erase(0, end + 2);
+
+                    // Search for another message
+                    start = id(global_ble_rx_buf).find("\x10GB(");
+                    end = id(global_ble_rx_buf).find(")\n", start);
+                  }
+
+
+                  // Next, handle setTime(...) commands
+                  start = id(global_ble_rx_buf).find("setTime(");
+                  end = id(global_ble_rx_buf).find(");", start);
+
+                  while (start != std::string::npos && end != std::string::npos) {
+                    size_t ts_start = start + 8;
+                    std::string timestamp_str = id(global_ble_rx_buf).substr(ts_start, end - ts_start);
+                    ESP_LOGI("BLE", "Parsed setTime timestamp: %s", timestamp_str.c_str());
+
+                    // Convert to integer
+                    int64_t timestamp = atoll(timestamp_str.c_str());
+
+                      struct timeval tv;
+                      tv.tv_sec = timestamp;
+                      tv.tv_usec = 0;
+                      settimeofday(&tv, nullptr);
+
+                      ESP_LOGI("BLE", "System time set to %lld", (long long)timestamp);
+
+                    // Remove parsed message from buffer
+                    id(global_ble_rx_buf).erase(0, end + 2);
+
+                    // Search for another message
+                    start = id(global_ble_rx_buf).find("setTime(");
+                    end = id(global_ble_rx_buf).find(");", start);
+                  }
+
+                  // Then, handle setTimeZone(...) commands
+                  start = id(global_ble_rx_buf).find("setTimeZone(");
+                  end = id(global_ble_rx_buf).find(");", start);
+
+                  while (start != std::string::npos && end != std::string::npos) {
+                    size_t tz_start = start + 12;  // length of "setTimeZone("
+                    std::string tz_str = id(global_ble_rx_buf).substr(tz_start, end - tz_start);
+                    ESP_LOGI("BLE", "Parsed setTimeZone offset: %s", tz_str.c_str());
+
+                    float offset_hours = atof(tz_str.c_str());
+
+                    int hours = int(offset_hours);
+                    float fractional = offset_hours - hours;
+                    int minutes = int(fabs(fractional) * 60);
+
+                    char tz_buf[16];
+                    // If no minutes, omit ":"
+                    if (minutes == 0) {
+                      snprintf(tz_buf, sizeof(tz_buf), "UTC%s%d",
+                               (offset_hours > 0) ? "-" : "+",
+                               abs(hours));
+                    } else {
+                      snprintf(tz_buf, sizeof(tz_buf), "UTC%s%d:%02d",
+                               (offset_hours > 0) ? "-" : "+",
+                               abs(hours), minutes);
+                    }
+
+                    ESP_LOGI("BLE", "TZ POSIX string: %s", tz_buf);
+
+                    setenv("TZ", tz_buf, 1);
+                    tzset();
+
+                    ESP_LOGI("BLE", "TimeZone set to %+0.1f", offset_hours);
+
+                    id(global_ble_rx_buf).erase(0, end + 2);
+                    start = id(global_ble_rx_buf).find("setTimeZone(");
+                    end = id(global_ble_rx_buf).find(");", start);
+                    id(epaper).update();
+                    //id(epaper).do_full_update();
+                  }
+
+                  // Optional: prevent buffer overflow
+                  if (id(global_ble_rx_buf).length() > 2048) {
+                    ESP_LOGW("BLE", "BLE buffer overflow, clearing");
+                    id(global_ble_rx_buf).clear();
+                  }
+
+
