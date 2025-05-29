@@ -89,6 +89,14 @@ esp32:
   framework:
     type: esp-idf
 
+deep_sleep:
+  # https://esphome.io/components/deep_sleep.html
+  wakeup_pin_mode: INVERT_WAKEUP
+  wakeup_pin:
+    number: $BUTTON_LEFT_TOP_PIN
+    inverted: $BUTTON_PIN_INVERTED
+    allow_other_uses: true
+
 spi:
   clk_pin: ${SPI_SCK_PIN}
   mosi_pin: ${SPI_MOSI_PIN}
@@ -137,7 +145,7 @@ binary_sensor:
   # https://esphome.io/components/binary_sensor/gpio
 
   ## Upper Left ##
-  - id: power_on_button
+  - id: button_left_top_short
     pin:
       number: $BUTTON_LEFT_TOP_PIN
       allow_other_uses: true
@@ -150,7 +158,7 @@ binary_sensor:
         - lambda: |-
             id(buzzer).turn_on();
             
-  - id: power_saving_mode_button
+  - id: button_left_top_long
     pin:
       number: $BUTTON_LEFT_TOP_PIN
       allow_other_uses: true
@@ -163,7 +171,7 @@ binary_sensor:
           id(buzzer).turn_off();
           
   ## Lower Left ##
-  - id: timer_button
+  - id: button_left_bottom_short
     pin:
       number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
@@ -176,7 +184,7 @@ binary_sensor:
         - lambda: |-
             id(buzzer).turn_on();
 
-  - id: cancel_active_timer_button
+  - id: button_left_bottom_long
     pin:
       number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
@@ -188,21 +196,9 @@ binary_sensor:
       - lambda: |-
           id(buzzer).turn_off();
 
-  - id: clear_all_timers_button
-    pin:
-      number: $BUTTON_LEFT_BOTTOM_PIN
-      allow_other_uses: true
-      inverted: $BUTTON_PIN_INVERTED
-    platform: gpio
-    filters:
-      delayed_on: 4s
-    on_press:
-      - lambda: |-
-          id(buzzer).turn_on();
-
   ## Upper Right ##
 
-  - id: face_cycle_button
+  - id: button_right_top_short
     pin:
       number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
@@ -215,7 +211,7 @@ binary_sensor:
         - lambda: |-
             id(buzzer).turn_on();
 
-  - id: calendar_agenda_mode_button
+  - id: button_right_top_long
     pin:
       number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
@@ -229,7 +225,7 @@ binary_sensor:
 
   ## Lower Right ##
 
-  - id: menu_mode_button
+  - id: button_right_bottom_short
     pin:
       number: $BUTTON_RIGHT_BOTTOM_PIN
       allow_other_uses: true
@@ -242,7 +238,7 @@ binary_sensor:
         - lambda: |-
             id(buzzer).turn_on();
 
-  - id: full_epaper_refresh_button
+  - id: button_right_bottom_long
     pin:
       number: $BUTTON_RIGHT_BOTTOM_PIN
       allow_other_uses: true
