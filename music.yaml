@@ -26,6 +26,15 @@ script:
           if (id(global_page) != PAGE_MUSIC)
             return;
 
+          auto w = id(epaper).get_width();
+          int y = 30;  // Начальный отступ от верхней границы
+
+          id(epaper).print(4, y, id(ubuntumono18), "Rock-N-Roll!"); y += 20;
+          id(epaper).printf(4, y, id(ubuntumono20), "%s", id(global_music_artist).c_str()); y += 20;
+          id(epaper).printf(4, y, id(ubuntumono20), "%s", id(global_music_track).c_str()); y += 20;
+          id(epaper).printf(4, y, id(ubuntumono20), "%s", id(global_music_state).c_str()); y += 20;
+          id(epaper).printf(4, y, id(ubuntumono20), "Volume: %.1f%%", id(global_audio_volume));
+
           return;
 
     # ------------ LEFT BUTTONS --------------------

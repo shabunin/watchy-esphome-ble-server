@@ -15,9 +15,51 @@ graphical_display_menu:
         component.update: epaper
     items:
       - type: Label
-        text: ---
+        text: "no alarms"
 
 script:
+
+  # -------------- UPDATE MENU ---------------------
+  - id: script_update_alarms_menu
+    mode: restart
+    then:
+      - delay: 300ms
+      - lambda: |-
+          if (id(global_alarms_menu_root) != nullptr) {
+            for (int i = 0; i < id(global_alarms_menu_root)->items_size(); i += 1) {
+              delete id(global_alarms_menu_root)->get_item(i);
+            }
+            delete id(global_alarms_menu_root);
+            id(global_alarms_menu_root) = nullptr;
+          }
+
+          auto* root = new display_menu_base::MenuItemMenu();
+          id(global_alarms_menu_root) = root;
+          id(alarms_menu)->set_root_item(root);
+
+          const char* days[] = {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"};
+
+          for (const auto &a : id(global_alarms)) {
+            uint8_t h = ALARM_HOUR(a);
+            uint8_t m = ALARM_MIN(a);
+            uint8_t rep = ALARM_DAYS(a);
+            bool enabled = ALARM_ON(a);
+
+            char buf[64];
+            snprintf(buf, sizeof(buf), "[%s] %02d:%02d ", enabled ? "on" : "off", h, m);
+
+            auto* item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_LABEL);
+            item->set_text(buf);
+            root->add_item(item);
+          }
+
+          if (root->items_size() == 0) {
+            auto* item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_LABEL);
+            item->set_text("(no alarms)");
+            root->add_item(item);
+          }
+
+          id(alarms_menu).show_main();
 
   # -------------- DRAW PAGE -----------------------
   
@@ -27,6 +69,12 @@ script:
           if (id(global_page) != PAGE_ALARMS)
             return;
 
+          auto y = 23;
+            
+          auto w = id(epaper).get_width();
+          auto h = id(epaper).get_height();
+          id(epaper).menu(0, y, id(alarms_menu), w, h - 2*y);
+          
           return;
 
     # ------------ LEFT BUTTONS --------------------

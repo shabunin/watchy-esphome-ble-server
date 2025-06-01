@@ -3,6 +3,9 @@ globals:
     type: std::string
     restore_value: no
     initial_value: '""'
+  - id: global_ble_connected
+    type: bool
+    restore_value: no
 
 script:
   - id: script_ble_send_json
@@ -65,7 +68,8 @@ script:
         tzset();
 
         ESP_LOGI("BLE", "TimeZone set to %+0.1f", offset_hours);
-        id(epaper).update();
+
+        id(script_update_display).execute();
         return;
 
   # -------------- PARSE GADGETBRDIGE COMMAND ----------------------------------
@@ -78,13 +82,120 @@ script:
         DeserializationError err = deserializeJson(doc, json_part.c_str());
         if (err) {
           ESP_LOGW("BLE", "Invalid JSON");
+        } else {
+          std::string type = doc["t"] | "";
+          ESP_LOGI("BLE", "Parsed type: %s", type.c_str());
+
+          if (type == "notify") {
+            int notif_id = doc["id"] | -1;
+            if (notif_id == -1) return;
+
+            std::string str;
+            serializeJson(doc, str);
+            id(global_notifications)[notif_id] = str;
+
+            ESP_LOGI("NOTIF", "Stored notification #%d", notif_id);
+
+            id(script_update_notifications_menu)->stop();
+            id(script_update_notifications_menu)->execute();
+
+          } else if (type == "notify-") {
+              int notif_id = doc["id"] | -1;
+              if (notif_id == -1) return;
+
+              id(global_notifications).erase(notif_id);
+
+              ESP_LOGI("NOTIF", "Deleted notification #%d", notif_id);
+
+              id(script_update_notifications_menu)->stop();
+              id(script_update_notifications_menu)->execute();
+
+          } else if (type == "find") {
+          
+            bool on = doc["n"] | false;
+            ESP_LOGI("BLE", "Find device: %s", on ? "ON" : "OFF");
+            
+          } else if (type == "vibrate") {
+          
+            int dur = doc["n"] | 0;
+            ESP_LOGI("BLE", "Vibrate for %d ms", dur);
+
+            id(buzzer).turn_on();
+            delay(dur);
+            id(buzzer).turn_off();
+            
+          } else if (type == "weather") {
+            ESP_LOGI("BLE", "Weather: temp=%.1f°C hum=%.1f%%", doc["temp"] | 0.0f, doc["hum"] | 0.0f);
+          } else if (type == "musicstate") {
+
+            ESP_LOGI("BLE", "Music state: %s", doc["state"] | "");
+            id(global_music_state) = doc["state"] | "";
+
+          } else if (type == "musicinfo") {
+            ESP_LOGI("BLE", "Now playing: %s - %s", doc["artist"] | "", doc["track"] | "");
+            
+            id(global_music_artist) = doc["artist"] | "";
+            id(global_music_track) = doc["track"] | "";
+
+          } else if (type == "audio") {
+            float volume = doc["v"] | -1.0;
+            if (volume >= 0.0f) {
+              id(global_audio_volume) = volume;
+              ESP_LOGI("AUDIO", "Volume: %.1f%%", volume);
+            }
+          } else if (type == "call") {
+            ESP_LOGI("BLE", "Call %s from %s", doc["cmd"] | "", doc["name"] | "");
+          } else if (type == "gps") {
+            ESP_LOGI("BLE", "GPS: lat=%.6f lon=%.6f alt=%.1f", doc["lat"] | 0.0, doc["lon"] | 0.0, doc["alt"] | 0.0);
+          } else if (type == "is_gps_active") {
+            ESP_LOGI("BLE", "GPS status requested");
+          } else if (type == "alarm") {
+
+              id(global_alarms).clear();  // overwrite with new list
+              JsonArray alarms = doc["d"].as<JsonArray>();
+
+              for (JsonObject alarm : alarms) {
+                uint8_t h = alarm["h"] | 0;
+                uint8_t m = alarm["m"] | 0;
+                uint8_t rep = alarm["rep"] | 0;
+                bool on = alarm["on"] | true;
+
+                uint32_t packed =
+                    ((uint32_t)m) |
+                    ((uint32_t)h << 8) |
+                    ((uint32_t)rep << 16) |
+                    ((uint32_t)on << 23);
+
+                id(global_alarms).push_back(packed);
+                ESP_LOGI("ALARM", "Stored: %02d:%02d rep=%02x on=%d", h, m, rep, on);
+              }
+
+              id(script_update_alarms_menu)->stop();
+              id(script_update_alarms_menu)->execute();
+
+          } else {
+            ESP_LOGW("BLE", "Unhandled type: %s", type.c_str());
+          }
         }
 
-        // TODO: process json here
-    
+        id(script_update_display).stop();
+        id(script_update_display).execute();
+
         return;
 
+esp32_ble:
+  enable_on_boot: true
+  
 esp32_ble_server:
+  on_connect:
+    then:
+      lambda: |-
+        id(global_ble_connected) = true;
+  on_disconnect:
+    then:
+      lambda: |-
+        id(global_ble_connected) = false;
+        
   services:
     - uuid: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"  # Nordic UART
       characteristics:

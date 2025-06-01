@@ -10,6 +10,14 @@ packages:
 # to be able to parse json in lambdas
 json:
 
+script:
+  - id: script_update_display
+    mode: restart
+    then:
+      - delay: 300ms
+      - lambda: |-
+          id(epaper).update();
+        
 globals:
   - id: global_mode
     type: int
@@ -110,7 +118,6 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(buzzer).turn_on();
             
   - id: button_left_top_long
     pin:
@@ -122,8 +129,14 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(buzzer).turn_off();
-          
+
+          if (id(global_mode) == MODE_NORMAL)
+            id(global_mode) = MODE_CONTROL;
+          else
+            id(global_mode) = MODE_NORMAL;
+
+          id(script_update_display).execute();
+                    
   ## Lower Left ##
   - id: button_left_bottom_short
     pin:
@@ -136,7 +149,7 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(buzzer).turn_on();
+            
 
   - id: button_left_bottom_long
     pin:
@@ -148,7 +161,6 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(buzzer).turn_off();
 
   ## Upper Right ##
 
@@ -163,7 +175,15 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(buzzer).turn_on();
+            
+            if (id(global_mode) == MODE_NORMAL) {
+              if (id(global_page) > 0)
+                id(global_page) -= 1;
+
+              id(script_update_display).execute(); 
+
+              return;
+            }
 
   - id: button_right_top_long
     pin:
@@ -175,8 +195,7 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(buzzer).turn_off();
-
+          
   ## Lower Right ##
 
   - id: button_right_bottom_short
@@ -190,7 +209,14 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(buzzer).turn_on();
+            if (id(global_mode) == MODE_NORMAL) {
+              if (id(global_page) < PAGE_MAX)
+                id(global_page) += 1;
+
+              id(script_update_display).execute(); 
+
+              return;
+            }
 
   - id: button_right_bottom_long
     pin:
@@ -202,10 +228,7 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(buzzer).turn_on();
-          id(epaper).update();
-          id(buzzer).turn_off();
-          
+        
   ## Charging ##
   - id: is_charging
     pin:
@@ -250,7 +273,7 @@ display:
     dc_pin: $DISPLAY_DC_PIN
     reset_pin: $DISPLAY_RES_PIN
     busy_pin: $DISPLAY_BUSY_PIN
-    update_interval: never
+    update_interval: 30s
     # Problem: full_update_every does not work as expected because esphome code will do a full update on every boot up.
     # Solution: Edited `waveshare_epaper.h` and initialise to 1 instead of 0: `uint32_t at_update_{1};`
     # See: `external_components` near the bottom.
@@ -263,32 +286,56 @@ display:
       const auto BLACK = Color::WHITE;
       const auto WHITE = Color::BLACK;
 
-      struct tm timeinfo;
+      it.filled_rectangle(0, 0, w, h, BLACK);
+      it.filled_rectangle(0, 0, w, h, WHITE);
+
       time_t now;
+      struct tm timeinfo;
       time(&now);
+      localtime_r(&now, &timeinfo);
 
-      it.filled_rectangle(0, 0, w, h, BLACK); // clear entire background
-      it.filled_rectangle(0, 0, w, h, WHITE); // clear entire background
-            
-      it.printf(w/2, h-30,
-              id(ubuntumono22),
-              TextAlign::TOP_CENTER,
-              "bat: %.02fV", id(battery).state);
 
-        localtime_r(&now, &timeinfo);
+      // top statusbar
+      const char* modes[] = { MODE_NORMAL_TITLE, MODE_CONTROL_TITLE };
+      const char* mode_name = modes[id(global_mode)];
 
-        ESP_LOGI("TIME", "Local time: %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      char time_buf[6];
+      snprintf(time_buf, sizeof(time_buf), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
-        it.printf(it.get_width() / 2, 30,
-                  id(ubuntumono32), TextAlign::CENTER,
-                   "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      it.printf(4, 0, id(ubuntumono20), TextAlign::TOP_LEFT, "%s", mode_name);
+      it.printf(w - 4, 0, id(ubuntumono20), TextAlign::TOP_RIGHT, "%s", time_buf);
 
-        it.printf(it.get_width() / 2, 80,
-                  id(ubuntumono32), TextAlign::CENTER,
-                  "%04d-%02d-%02d",
-                  timeinfo.tm_year + 1900,
-                  timeinfo.tm_mon + 1,
-                  timeinfo.tm_mday);
+      // page content
+      switch(id(global_page)) {
+        case PAGE_HOME:
+          it.printf(w / 2, h / 2, id(ubuntumono28), TextAlign::CENTER, "HELLO FRIEND");
+          break;
+        case PAGE_MUSIC:
+          id(script_music_page_update).execute();
+          break;
+        case PAGE_ALARMS:
+          id(script_alarms_page_update).execute();
+          break;
+        case PAGE_NOTIFICATIONS:
+          id(script_notifications_page_update).execute();
+          break;
+        default:
+          it.printf(w / 2, h / 2, id(ubuntumono28), TextAlign::CENTER, "default page");
+          break;
+      }
+
+      // battery status
+      const int battery_max_voltage = 399;
+      const int esp_min_voltage = 220;
+      auto battery_percentage = max(0, min(int((int(id(battery).state * 100) - esp_min_voltage) * 100 / (battery_max_voltage - esp_min_voltage)), 100));
+
+      const char* ble_status = "---";  // Или "C"/"D"
+      if (id(global_ble_connected))
+        ble_status = "BLE";
+
+      // bottom status bar
+      it.printf(4, h, id(ubuntumono20), TextAlign::BOTTOM_LEFT, "%s", ble_status);
+      it.printf(w - 4, h, id(ubuntumono20), TextAlign::BOTTOM_RIGHT, "BAT: %d%%", battery_percentage);
 
 external_components:
   # https://esphome.io/components/external_components.html

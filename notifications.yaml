@@ -15,9 +15,49 @@ graphical_display_menu:
         component.update: epaper
     items:
       - type: Label
-        text: ---
+        text: "no notifications"
 
 script:
+
+  # -------------- UPDATE MENU ---------------------
+  - id: script_update_notifications_menu
+    mode: restart
+    then:
+      - delay: 300ms
+      - lambda: |-
+          auto* root = new display_menu_base::MenuItemMenu();
+          id(notifications_menu)->set_root_item(root);
+          id(global_notifications_menu_root) = root;
+
+          bool added = false;
+          for (const auto& pair : id(global_notifications)) {
+            const std::string& raw = pair.second;
+            StaticJsonDocument<512> doc;
+            if (deserializeJson(doc, raw.c_str()) != DeserializationError::Ok) continue;
+
+            std::string src = doc["src"] | "";
+            std::string title = doc["title"] | "";
+            std::string subject = doc["subject"] | "";
+
+            const std::string& content = !subject.empty() ? subject : (!title.empty() ? title : doc["body"] | "");
+
+            char label[96];
+            snprintf(label, sizeof(label), "%s: %s", src.c_str(), content.c_str());
+
+            auto* item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_LABEL);
+            item->set_text(label);
+            root->add_item(item);
+            added = true;
+          }
+
+          if (!added) {
+            auto* empty = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_LABEL);
+            empty->set_text("(no notifications)");
+            root->add_item(empty);
+          }
+
+          id(notifications_menu).show_main();
+  
   # -------------- DRAW PAGE -----------------------
  
   - id: script_notifications_page_update
@@ -25,6 +65,12 @@ script:
       - lambda: |-
           if (id(global_page) != PAGE_NOTIFICATIONS)
             return;
+
+          auto y = 23;
+
+          auto w = id(epaper).get_width();
+          auto h = id(epaper).get_height();
+          id(epaper).menu(0, y, id(notifications_menu), w, h - 2*y);
 
           return;
 
