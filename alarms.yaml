@@ -117,6 +117,8 @@ script:
           if (id(global_page) != PAGE_ALARMS)
             return;
 
+          id(alarms_menu).up();
+
           return;
 
   - id: script_alarms_page_btn_right_top_long
@@ -124,6 +126,8 @@ script:
       - lambda: |-
           if (id(global_page) != PAGE_ALARMS)
             return;
+
+          id(alarms_menu).up();
 
           return;
           
@@ -133,6 +137,8 @@ script:
           if (id(global_page) != PAGE_ALARMS)
             return;
 
+          id(alarms_menu).down();
+
           return;
 
   - id: script_alarms_page_btn_right_bottom_long
@@ -140,5 +146,7 @@ script:
       - lambda: |-
           if (id(global_page) != PAGE_ALARMS)
             return;
+
+          id(alarms_menu).down();
 
           return;

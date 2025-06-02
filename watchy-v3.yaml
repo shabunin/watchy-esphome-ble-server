@@ -17,7 +17,93 @@ script:
       - delay: 300ms
       - lambda: |-
           id(epaper).update();
-        
+  - id: script_on_page_select
+    then:
+      lambda: |-
+        switch(id(global_page)) {
+          case PAGE_HOME:
+            id(global_script_control_btn_left_top_short) = nullptr;
+            id(global_script_control_btn_left_top_long) = nullptr;
+            id(global_script_control_btn_left_bottom_short) = nullptr;
+            id(global_script_control_btn_left_bottom_long) = nullptr;
+
+            id(global_script_control_btn_right_top_short) = nullptr;
+            id(global_script_control_btn_right_top_long) = nullptr;
+            id(global_script_control_btn_right_bottom_short) = nullptr;
+            id(global_script_control_btn_right_bottom_long) = nullptr;
+            break;
+          case PAGE_MUSIC:
+            id(global_script_control_btn_left_top_short) = script_music_page_btn_left_top_short;
+            id(global_script_control_btn_left_top_long) = script_music_page_btn_left_top_long;
+            id(global_script_control_btn_left_bottom_short) = script_music_page_btn_left_bottom_short;
+            id(global_script_control_btn_left_bottom_long) = script_music_page_btn_left_bottom_long;
+
+            id(global_script_control_btn_right_top_short) =  script_music_page_btn_right_top_short;
+            id(global_script_control_btn_right_top_long) = script_music_page_btn_right_top_long;
+            id(global_script_control_btn_right_bottom_short) = script_music_page_btn_right_bottom_short;
+            id(global_script_control_btn_right_bottom_long) = script_music_page_btn_right_bottom_long;
+            break;
+          case PAGE_ALARMS:
+            id(global_script_control_btn_left_top_short) = script_alarms_page_btn_left_top_short;
+            id(global_script_control_btn_left_top_long) = script_alarms_page_btn_left_top_long;
+            id(global_script_control_btn_left_bottom_short) = script_alarms_page_btn_left_bottom_short;
+            id(global_script_control_btn_left_bottom_long) = script_alarms_page_btn_left_bottom_long;
+
+            id(global_script_control_btn_right_top_short) =  script_alarms_page_btn_right_top_short;
+            id(global_script_control_btn_right_top_long) = script_alarms_page_btn_right_top_long;
+            id(global_script_control_btn_right_bottom_short) = script_alarms_page_btn_right_bottom_short;
+            id(global_script_control_btn_right_bottom_long) = script_alarms_page_btn_right_bottom_long;
+            break;
+          case PAGE_NOTIFICATIONS:
+            id(global_script_control_btn_left_top_short) = script_notifications_page_btn_left_top_short;
+            id(global_script_control_btn_left_top_long) = script_notifications_page_btn_left_top_long;
+            id(global_script_control_btn_left_bottom_short) = script_notifications_page_btn_left_bottom_short;
+            id(global_script_control_btn_left_bottom_long) = script_notifications_page_btn_left_bottom_long;
+
+            id(global_script_control_btn_right_top_short) =  script_notifications_page_btn_right_top_short;
+            id(global_script_control_btn_right_top_long) = script_notifications_page_btn_right_top_long;
+            id(global_script_control_btn_right_bottom_short) = script_notifications_page_btn_right_bottom_short;
+            id(global_script_control_btn_right_bottom_long) = script_notifications_page_btn_right_bottom_long;
+            break;
+          default:
+
+            id(global_script_control_btn_left_top_short) = nullptr;
+            id(global_script_control_btn_left_top_long) = nullptr;
+            id(global_script_control_btn_left_bottom_short) = nullptr;
+            id(global_script_control_btn_left_bottom_long) = nullptr;
+
+            id(global_script_control_btn_right_top_short) = nullptr;
+            id(global_script_control_btn_right_top_long) = nullptr;
+            id(global_script_control_btn_right_bottom_short) = nullptr;
+            id(global_script_control_btn_right_bottom_long) = nullptr;
+            break;
+        }
+  - id: script_page_next
+    then:
+      lambda: |-
+        if (id(global_page) < PAGE_MAX)
+          id(global_page) += 1;
+          id(script_update_display).execute();
+
+        id(script_on_page_select).execute();
+
+  - id: script_page_prev
+    then:
+      lambda: |-
+        if (id(global_page) > 0)
+          id(global_page) -= 1;
+          id(script_update_display).execute();
+
+        id(script_on_page_select).execute();
+
+  - id: script_vibro_short
+    then:
+      lambda:
+        id(buzzer).turn_on();
+        delay(300);
+        id(buzzer).turn_off();
+
+
 globals:
   - id: global_mode
     type: int
@@ -25,6 +111,38 @@ globals:
   - id: global_page
     type: int
     initial_value: '0' 
+  - id: global_script_control_btn_left_top_short
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_left_bottom_short
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_right_top_short
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_right_bottom_short
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_left_top_long
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_left_bottom_long
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_right_top_long
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
+  - id: global_script_control_btn_right_bottom_long
+    type: script::SingleScript<> *
+    restore_value: no
+    initial_value: 'nullptr'
 
 esphome:
   name: watchy_minimal
@@ -118,6 +236,18 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
+
+           if (id(global_mode) == MODE_NORMAL) {
+              id(script_page_prev).execute();
+              return;
+            }
+
+            if( id(global_mode) == MODE_CONTROL &&
+              id(global_script_control_btn_left_top_short) != nullptr) {
+
+              id (script_vibro_short).execute();
+              id(global_script_control_btn_left_top_short)->execute();
+            }
             
   - id: button_left_top_long
     pin:
@@ -136,6 +266,18 @@ binary_sensor:
             id(global_mode) = MODE_NORMAL;
 
           id(script_update_display).execute();
+
+
+          // in control mode pass-through 
+          if( id(global_mode) == MODE_CONTROL &&
+              id(global_script_control_btn_left_bottom_long) != nullptr) {
+
+            id (script_vibro_short).execute();
+            id(global_script_control_btn_left_top_long)->execute();
+          }
+          
+
+
                     
   ## Lower Left ##
   - id: button_left_bottom_short
@@ -149,7 +291,22 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            
+
+            // just switch pages
+            if (id(global_mode) == MODE_NORMAL) {
+              id (script_vibro_short).execute();
+              id(script_page_next).execute();
+              return;
+            }
+
+            // in control mode pass-through 
+            if( id(global_mode) == MODE_CONTROL &&
+                id(global_script_control_btn_left_bottom_short) != nullptr) {
+
+              id (script_vibro_short).execute();
+              ESP_LOGI("BTN", "calling global_script_control_btn_left_bottom_short!");
+              id(global_script_control_btn_left_bottom_short)->execute();
+            }            
 
   - id: button_left_bottom_long
     pin:
@@ -161,6 +318,15 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
+
+            // in control mode pass-through 
+            if( id(global_mode) == MODE_CONTROL &&
+                id(global_script_control_btn_left_bottom_long) != nullptr) {
+
+              id (script_vibro_short).execute();
+              id(global_script_control_btn_left_bottom_long)->execute();
+            }
+          
 
   ## Upper Right ##
 
@@ -177,12 +343,16 @@ binary_sensor:
         - lambda: |-
             
             if (id(global_mode) == MODE_NORMAL) {
-              if (id(global_page) > 0)
-                id(global_page) -= 1;
-
-              id(script_update_display).execute(); 
-
+              id(script_page_prev).execute();
               return;
+            }
+
+            // in control mode pass-through 
+            if( id(global_mode) == MODE_CONTROL &&
+                id(global_script_control_btn_right_top_short) != nullptr) {
+
+              id (script_vibro_short).execute();
+              id(global_script_control_btn_right_top_short)->execute();
             }
 
   - id: button_right_top_long
@@ -195,6 +365,14 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
+
+            // in control mode pass-through 
+            if( id(global_mode) == MODE_CONTROL &&
+                id(global_script_control_btn_right_top_long) != nullptr) {
+
+              id (script_vibro_short).execute();
+              id(global_script_control_btn_right_top_long)->execute();
+            }
           
   ## Lower Right ##
 
@@ -210,12 +388,16 @@ binary_sensor:
       then:
         - lambda: |-
             if (id(global_mode) == MODE_NORMAL) {
-              if (id(global_page) < PAGE_MAX)
-                id(global_page) += 1;
-
-              id(script_update_display).execute(); 
-
+              id(script_page_next).execute();
               return;
+            }
+
+            // in control mode pass-through 
+            if( id(global_mode) == MODE_CONTROL &&
+                id(global_script_control_btn_right_bottom_short) != nullptr) {
+
+              id (script_vibro_short).execute();
+              id(global_script_control_btn_right_bottom_short)->execute();
             }
 
   - id: button_right_bottom_long
@@ -228,6 +410,15 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
+
+            // in control mode pass-through 
+            if( id(global_mode) == MODE_CONTROL &&
+                id(global_script_control_btn_right_bottom_long) != nullptr) {
+
+              id (script_vibro_short).execute();
+              id(global_script_control_btn_right_bottom_long)->execute();
+            }
+
         
   ## Charging ##
   - id: is_charging

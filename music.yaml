@@ -60,6 +60,9 @@ script:
           if (id(global_page) != PAGE_MUSIC)
             return;
 
+          std::string msg = R"({"t":"music","n":"playpause"} )";
+          id(script_ble_send_json)->execute(msg);
+
           return;
 
   - id: script_music_page_btn_left_bottom_long
@@ -77,6 +80,9 @@ script:
           if (id(global_page) != PAGE_MUSIC)
             return;
 
+          std::string msg = R"({"t":"music","n":"volumeup"} )";
+          id(script_ble_send_json)->execute(msg);
+
           return;
 
   - id: script_music_page_btn_right_top_long
@@ -84,6 +90,9 @@ script:
       - lambda: |-
           if (id(global_page) != PAGE_MUSIC)
             return;
+
+          std::string msg = R"({"t":"music","n":"prev"} )";
+          id(script_ble_send_json)->execute(msg);
 
           return;
           
@@ -93,6 +102,9 @@ script:
           if (id(global_page) != PAGE_MUSIC)
             return;
 
+          std::string msg = R"({"t":"music","n":"volumedown"} )";
+          id(script_ble_send_json)->execute(msg);
+
           return;
 
   - id: script_music_page_btn_right_bottom_long
@@ -100,5 +112,8 @@ script:
       - lambda: |-
           if (id(global_page) != PAGE_MUSIC)
             return;
+
+          std::string msg = R"({"t":"music","n":"next"} )";
+          id(script_ble_send_json)->execute(msg);
 
           return;
